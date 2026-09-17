@@ -1,0 +1,41 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: ops/Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: ${NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
+        NEXT_PUBLIC_CDN_URL: ${NEXT_PUBLIC_CDN_URL}
+    image: ucs-web:current
+    container_name: ucs-web
+    restart: always
+
+    # Secrets live outside the application directory; the app can read them,
+    # but a foothold inside the container cannot reach the host copy.
+    env_file:
+      - /etc/ucs/ucs.env
+
+    # Only nginx on the host reaches this; the port is not published publicly.
+    ports:
+      - "127.0.0.1:3002:3000"
+
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /app/.next/cache:size=256m
+
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+    mem_limit: 1g
+    pids_limit: 256
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

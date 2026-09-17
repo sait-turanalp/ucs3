@@ -8,3 +8,12 @@ out/
 next-env.d.ts
 logs/
 .DS_Store
+
+# Secrets never live in the repo — they are read from /etc/ucs/ucs.env on the host.
+.env.production
+env.local
+env.txt
+
+# Intrusion artifacts seen in 2026-09: a miner tree was staged here.
+.mnt/
+public/*.php

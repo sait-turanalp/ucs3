@@ -1,0 +1,12 @@
+.git
+.github
+node_modules
+.next
+npm-debug.log*
+.env*
+env.local
+env.txt
+.mnt
+logs
+*.md
+ops/systemd

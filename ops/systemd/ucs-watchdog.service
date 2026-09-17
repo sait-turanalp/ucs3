@@ -1,0 +1,9 @@
+[Unit]
+Description=UCS site watchdog (one probe)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/ucs/ucs3/ops/watchdog.sh
+TimeoutStartSec=120
