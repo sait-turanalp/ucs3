@@ -17,8 +17,9 @@ served from a hardened container on a single VPS behind nginx.
 
 Page structure, component inventory and asset map: see `AGENTS.md`.
 
-External dependencies: self-hosted Supabase (gallery + admin auth) and BunnyCDN
-(images, with `/public` fallbacks). Mapbox powers the operation map.
+External dependencies: BunnyCDN
+(images, with `/public` fallbacks) and Mapbox for the operation map. Supabase backs the
+admin side only — the public pages render without it.
 
 ## Operating it
 
@@ -90,10 +91,15 @@ A green battle test without a green negative control is not evidence.
 
 ## Open items
 
-- **Gallery is broken, and it was broken before the intrusion.** The self-hosted
-  Supabase at `dbapi.we3design.net` resolves to `178.208.187.74`, the decommissioned
-  old VPS, and its TLS handshake fails. `/api/gallery` returns 500 until that backend
-  is moved or repointed.
+- **The public site does not need Supabase at all.** The homepage gallery reads local
+  files through `src/lib/getLocalGalleryData.ts`; `/api/gallery` is the old CRUD path
+  and nothing on the public site calls it. Only the admin side depends on Supabase:
+  `/login` (next-auth), `/api/gallery`, `/api/settings`, `/api/account`.
+- **The Supabase backend is unreachable.** `dbapi.we3design.net` resolves to
+  `178.208.187.74`, the decommissioned old VPS, and its TLS handshake fails, so those
+  admin endpoints return 500. Either repoint it or — if the admin panel is no longer
+  used now that galleries are local — drop the dependency and the service-role key
+  with it, which removes the most dangerous secret on the host.
 - **Supabase and Mapbox keys are still the pre-intrusion ones.** Only `NEXTAUTH_SECRET`
   could be rotated locally; the other two need access to their own consoles.
 - **swiper has an unpatched critical advisory** (prototype pollution). The fix is a
