@@ -1,0 +1,9 @@
+[Unit]
+Description=UCS daily drift audit
+
+[Service]
+Type=oneshot
+ExecStart=/opt/ucs/ucs3/ops/daily-audit.sh
+TimeoutStartSec=300
+# Drift is reported through the notification, not through a failed unit.
+SuccessExitStatus=0 1
