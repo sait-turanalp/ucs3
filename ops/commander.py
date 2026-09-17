@@ -128,12 +128,41 @@ def do_restart():
                "urgent", "rotating_light", ops=True)
 
 
+REBOOT_GRACE = 120   # seconds a polite reboot gets before we stop being polite
+
+
+def arm_forced_reboot():
+    """Guarantee the machine actually comes back, even if shutdown hangs.
+
+    Measured 2026-09-17: a polite `systemctl reboot` stopped every service in
+    seconds, then made no further progress for 17m45s before the machine finally
+    went down. From outside that is indistinguishable from a dead server.
+
+    This arms a transient unit with DefaultDependencies=no, so shutdown.target
+    neither orders against it nor stops it — it keeps counting while everything
+    else is being torn down. If the machine is still here after the grace window,
+    it flushes the disks and resets at the kernel level, which is what the reset
+    button on a physical case does. KillMode=none keeps systemd's final sweep off
+    it. If the polite reboot succeeds first, the unit dies with the machine and
+    nothing happens.
+    """
+    subprocess.run([
+        "systemd-run", "--unit=ucs-force-reboot", "--collect",
+        "--description=Forced reset if the graceful reboot hangs",
+        "--property=DefaultDependencies=no",
+        "--property=KillMode=none",
+        "/bin/sh", "-c",
+        "sleep %d; sync; echo b > /proc/sysrq-trigger" % REBOOT_GRACE,
+    ], capture_output=True, check=False)
+
+
 def do_reboot():
     # Send the message FIRST — after the reboot there is no chance.
     notify("Sunucu resetleniyor",
            "Butona bastın. Sunucu yeniden başlıyor, site 1-2 dakika içinde geri gelir.",
            "default", "arrows_counterclockwise")
     time.sleep(2)
+    arm_forced_reboot()
     subprocess.run(["systemctl", "reboot"], check=False)
 
 

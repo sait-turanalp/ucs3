@@ -1,0 +1,12 @@
+[Unit]
+Description=Announce on the phone that the server is back
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/ucs/ucs3/ops/boot-notify.sh
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

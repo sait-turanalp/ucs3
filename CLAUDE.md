@@ -66,6 +66,12 @@ intrusion.
   and sent a false alarm on top.
 - **The command listener must stay outside Docker.** In a container it would die
   exactly when it is needed. It is a plain systemd service with `Restart=always`.
+- **A graceful reboot on this host can hang for a quarter of an hour.** Measured
+  2026-09-17: `systemctl reboot` stopped every service within seconds, then made
+  no progress for 17m45s while the kernel stayed alive. The boot itself takes 32s.
+  Mitigations now in place: `DefaultTimeoutStopSec=30s`, a 10s container stop
+  grace, and a transient forced-reset unit armed before every reboot. Never judge
+  a reboot by "the site is down" — check `journalctl -b -1` afterwards.
 - **Do not add a second process manager.** A leftover pm2 setup and a `ucs-healthcheck`
   timer from an earlier cleanup kept resurrecting a dead systemd unit. One owner:
   compose for the container, one systemd timer for the watchdog.
@@ -92,6 +98,7 @@ all three: the hole, the persistence, and the blindness.
 | Host unchanged | `ops/daily-audit.sh` | exit 0, no output |
 | No secret is tracked | `git ls-files \| grep -iE '^\.?env'` | empty |
 | Phone button works | publish `restart` to `NTFY_CMD_TOPIC` | container StartedAt moves |
+| Reboot is announced | reboot, then watch the phone | "Sunucu geri geldi" with the boot time |
 
 A green battle test without a green negative control is not evidence.
 
