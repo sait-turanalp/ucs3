@@ -18,6 +18,13 @@ ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
 ARG NEXT_PUBLIC_CDN_URL
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Page-data collection instantiates the Supabase client at module scope
+# (src/lib/authOptions.ts), so the build needs *a* value. It is a placeholder on
+# purpose: the real key must never end up in an image layer. At run time the
+# module is evaluated again with the value from /etc/ucs/ucs.env.
+ENV SUPABASE_SERVICE_ROLE_KEY=placeholder-build-only
+
 RUN npm run build
 
 
