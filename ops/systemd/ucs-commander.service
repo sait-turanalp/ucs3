@@ -1,0 +1,15 @@
+[Unit]
+Description=UCS ntfy command listener (restart/reboot from the phone)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/ucs/ucs3/ops/commander.py
+Restart=always
+RestartSec=5
+# Runs outside Docker on purpose: the button has to work when the container is
+# dead, which is precisely when someone reaches for it.
+
+[Install]
+WantedBy=multi-user.target

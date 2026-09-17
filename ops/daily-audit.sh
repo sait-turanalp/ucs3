@@ -72,9 +72,9 @@ sections=$(grep '^[<>]' "$DIFF_FILE" | wc -l)
 summary=$(awk '/^== /{s=$0} /^[<>]/{print s}' "$CURRENT" 2>/dev/null | sort -u | head -3 | tr '\n' ' ')
 [ -z "$summary" ] && summary=$(grep -m3 '^[<>]' "$DIFF_FILE" | cut -c1-60 | tr '\n' ' ')
 
-"$NOTIFY" "Sunucuda beklenmedik degisiklik" \
-  "Gunluk kontrol ${sections} fark buldu. Ozet: ${summary}. Ayrinti: ${DIFF_FILE}" \
-  "rotating_light" "urgent" || true
+"$NOTIFY" "Sunucuda beklenmedik değişiklik" \
+  "Günlük kontrol ${sections} fark buldu. Özet: ${summary}. Ayrıntı: ${DIFF_FILE}" \
+  "urgent" "rotating_light" "drift" "ops" || true
 
 echo "DRIFT: $DIFF_FILE"
 exit 1

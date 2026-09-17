@@ -28,7 +28,12 @@ ops/deploy.sh        build + roll out; auto-rolls back if the new image is unhea
 ops/watchdog.sh      one probe of the public URL (systemd timer runs it every minute)
 ops/daily-audit.sh   host drift report; --accept adopts the current state as baseline
 ops/battle-test.sh   break it six ways and measure recovery; --negative is the control
+ops/commander.py     long-polls the secret command topic; runs restart / reboot
 ```
+
+Notifications go to `NTFY_TOPIC`; the restart and reset buttons publish to a
+separate `NTFY_CMD_TOPIC`, both in `/etc/ucs/ucs.env`. Problem messages carry the
+buttons, healthy ones never do.
 
 Deploying is `rsync` of a clean checkout to `/opt/ucs/ucs3`, then `ops/deploy.sh`.
 Never edit files directly on the server: `daily-audit.sh` reports any untracked
@@ -54,6 +59,13 @@ intrusion.
   PHP webshells and a full XMRig tree. Rebuild from git, always.
 - **Secrets used to be committed** (`.env.production`, `env.local`). They are untracked
   now and every value was rotated, but the old values remain in git history.
+- **Everything that runs compose shares `/var/lock/ucs-ops.lock`.** The watchdog,
+  the deploy script and the command listener all take it. Without it, a manual
+  restart makes containers look briefly missing, the watchdog calls that a crash,
+  and two compose runs race — on the CMR host that broke the stack, lost a service
+  and sent a false alarm on top.
+- **The command listener must stay outside Docker.** In a container it would die
+  exactly when it is needed. It is a plain systemd service with `Restart=always`.
 - **Do not add a second process manager.** A leftover pm2 setup and a `ucs-healthcheck`
   timer from an earlier cleanup kept resurrecting a dead systemd unit. One owner:
   compose for the container, one systemd timer for the watchdog.
@@ -79,6 +91,7 @@ all three: the hole, the persistence, and the blindness.
 | The suite actually measures | `ops/battle-test.sh --negative` | `NEGATIF HUCRE GECTI` |
 | Host unchanged | `ops/daily-audit.sh` | exit 0, no output |
 | No secret is tracked | `git ls-files \| grep -iE '^\.?env'` | empty |
+| Phone button works | publish `restart` to `NTFY_CMD_TOPIC` | container StartedAt moves |
 
 A green battle test without a green negative control is not evidence.
 

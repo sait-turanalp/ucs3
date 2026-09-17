@@ -11,6 +11,11 @@ COMPOSE="docker compose -f ${OPS_DIR}/docker-compose.yml"
 NOTIFY="${OPS_DIR}/notify.sh"
 HEALTH_TIMEOUT=120
 
+# Share the single compose lock with the watchdog and the command listener, so
+# a deploy and an automatic recovery can never run compose at the same time.
+exec 9>/var/lock/ucs-ops.lock
+flock 9
+
 set -a
 # shellcheck disable=SC1091
 . /etc/ucs/ucs.env
@@ -35,7 +40,7 @@ while [ $SECONDS -lt $deadline ]; do
   case "$state" in
     healthy)
       echo "OK: healthy in ${SECONDS}s"
-      "$NOTIFY" "Site yayinda" "Yeni surum ${SECONDS} saniyede ayaga kalkti." "rocket" || true
+      "$NOTIFY" "Site yayında" "Yeni sürüm ${SECONDS} saniyede ayağa kalktı." "default" "rocket" || true
       exit 0
       ;;
     unhealthy)
@@ -49,8 +54,8 @@ echo "FAILED: new version did not become healthy — rolling back" >&2
 if docker image inspect ucs-web:previous >/dev/null 2>&1; then
   docker tag ucs-web:previous ucs-web:current
   $COMPOSE up -d --force-recreate
-  "$NOTIFY" "Surum geri alindi" "Yeni surum acilmadi, eski calisan surume donuldu. Site ayakta." "warning" "high" || true
+  "$NOTIFY" "Sürüm geri alındı" "Yeni sürüm açılmadı, eski çalışan sürüme dönüldü. Site ayakta." "high" "warning" || true
 else
-  "$NOTIFY" "Deploy basarisiz" "Yeni surum acilmadi ve geri donulecek eski surum yok. Mudahale gerek." "rotating_light" "urgent" || true
+  "$NOTIFY" "Yayınlama başarısız" "Yeni sürüm açılmadı ve geri dönülecek eski sürüm yok. Müdahale gerekiyor." "urgent" "rotating_light" "" "ops" || true
 fi
 exit 1
